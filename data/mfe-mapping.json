@@ -1,0 +1,40 @@
+{
+  "3": {
+    "remoteName": "AlianzaSirioFeFacturas",
+    "basePath": "/facturas",
+    "screens": [
+      {
+        "path": "/facturas/documentos-garantias",
+        "exact": true
+      },
+      {
+        "path": "/facturas/cargue-tasas",
+        "exact": true
+      },
+      {
+        "path": "/facturas/control-cupo",
+        "exact": true
+      },
+      {
+        "path": "/facturas/reportes",
+        "exact": true
+      },
+      {
+        "path": "/facturas/autorizacion-inversiones",
+        "exact": true
+      },
+      {
+        "path": "/facturas/parametrizar-dias-festivos",
+        "exact": true
+      },
+      {
+        "path": "/facturas/autorizaciones-comercial",
+        "exact": true
+      },
+      {
+        "path": "/facturas/autorizaciones-riesgos",
+        "exact": true
+      }
+    ]
+  }
+}
