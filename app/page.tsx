@@ -5,7 +5,6 @@ import { useEffect, useState } from 'react';
 interface ScreenMapping {
   path: string;
   mfePath?: string;
-  exact: boolean;
 }
 
 interface ModuleMapping {
@@ -84,7 +83,7 @@ export default function Home() {
       ...mapping,
       [key]: {
         ...mapping[key],
-        screens: [...mapping[key].screens, { path: '', exact: false }],
+        screens: [...mapping[key].screens, { path: '' }],
       },
     });
   }
@@ -99,7 +98,7 @@ export default function Home() {
     });
   }
 
-  function updateScreen(key: string, index: number, field: keyof ScreenMapping, value: string | boolean) {
+  function updateScreen(key: string, index: number, field: keyof ScreenMapping, value: string) {
     setMapping({
       ...mapping,
       [key]: {
@@ -221,15 +220,6 @@ export default function Home() {
                     className="flex-1 px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg text-sm bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
                     placeholder="/facturas/documentos-garantias"
                   />
-                  <label className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300 whitespace-nowrap">
-                    <input
-                      type="checkbox"
-                      checked={screen.exact}
-                      onChange={(e) => updateScreen(key, index, 'exact', e.target.checked)}
-                      className="rounded border-zinc-300"
-                    />
-                    Exacta
-                  </label>
                   <button
                     onClick={() => removeScreen(key, index)}
                     className="px-2 py-2 text-red-500 hover:bg-red-50 rounded-lg"

@@ -4,72 +4,55 @@
     "basePath": "/facturas",
     "screens": [
       {
-        "path": "/facturas/documentos-garantias",
-        "exact": true
+        "path": "/facturas/documentos-garantias"
       },
       {
-        "path": "/facturas/cargue-tasas",
-        "exact": true
+        "path": "/facturas/cargue-tasas"
       },
       {
-        "path": "/facturas/control-cupo",
-        "exact": true
+        "path": "/facturas/control-cupo"
       },
       {
-        "path": "/facturas/reportes",
-        "exact": true
+        "path": "/facturas/reportes"
       },
       {
-        "path": "/facturas/autorizacion-inversiones",
-        "exact": true
+        "path": "/facturas/autorizacion-inversiones"
       },
       {
-        "path": "/facturas/parametrizar-dias-festivos",
-        "exact": true
-      },
-       {
-        "path": "/facturas/reportes",
-        "exact": true
-      },
-       {
-        "path": "/facturas/historico-reportes-operaciones",
-        "exact": true
-      },
-       {
-        "path": "/facturas/autorizaciones-comercial",
-        "exact": true
+        "path": "/facturas/parametrizar-dias-festivos"
       },
       {
-        "path": "/facturas/autorizaciones-riesgos",
-        "exact": true
-      },
-       {
-        "path": "/facturas/parametrizacion",
-        "exact": true
-      },
-         {
-        "path": "/facturas/tipo-referenciador",
-        "exact": true
-      },
-        {
-        "path": "/facturas/tipos-empresa",
-        "exact": true
+        "path": "/facturas/reportes"
       },
       {
-        "path": "/facturas/tamano-empresa",
-        "exact": true
+        "path": "/facturas/historico-reportes-operaciones"
       },
       {
-        "path": "/facturas/reportes-operaciones",
-        "exact": true
+        "path": "/facturas/autorizaciones-comercial"
       },
-       {
-        "path": "/facturas/reportes-referenciador",
-        "exact": true
+      {
+        "path": "/facturas/autorizaciones-riesgos"
       },
-       {
-        "path": "/facturas/parametrizar-tipos-dce",
-        "exact": true
+      {
+        "path": "/facturas/parametrizacion"
+      },
+      {
+        "path": "/facturas/tipo-referenciador"
+      },
+      {
+        "path": "/facturas/tipos-empresa"
+      },
+      {
+        "path": "/facturas/tamano-empresa"
+      },
+      {
+        "path": "/facturas/reportes-operaciones"
+      },
+      {
+        "path": "/facturas/reportes-referenciador"
+      },
+      {
+        "path": "/facturas/parametrizar-tipos-dce"
       }
     ]
   }
