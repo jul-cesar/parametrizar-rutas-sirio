@@ -27,12 +27,48 @@
         "path": "/facturas/parametrizar-dias-festivos",
         "exact": true
       },
-      {
+       {
+        "path": "/facturas/reportes",
+        "exact": true
+      },
+       {
+        "path": "/facturas/historico-reportes-operaciones",
+        "exact": true
+      },
+       {
         "path": "/facturas/autorizaciones-comercial",
         "exact": true
       },
       {
         "path": "/facturas/autorizaciones-riesgos",
+        "exact": true
+      },
+       {
+        "path": "/facturas/parametrizacion",
+        "exact": true
+      },
+         {
+        "path": "/facturas/tipo-referenciador",
+        "exact": true
+      },
+        {
+        "path": "/facturas/tipos-empresa",
+        "exact": true
+      },
+      {
+        "path": "/facturas/tamano-empresa",
+        "exact": true
+      },
+      {
+        "path": "/facturas/reportes-operaciones",
+        "exact": true
+      },
+       {
+        "path": "/facturas/reportes-referenciador",
+        "exact": true
+      },
+       {
+        "path": "/facturas/parametrizar-tipos-dce",
         "exact": true
       }
     ]
