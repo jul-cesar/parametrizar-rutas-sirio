@@ -15,6 +15,29 @@ interface ModuleMapping {
 
 type MfeMapping = Record<string, ModuleMapping>;
 
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function isMfeMapping(value: unknown): value is MfeMapping {
+  if (!isPlainObject(value)) return false;
+
+  for (const module of Object.values(value)) {
+    if (!isPlainObject(module)) return false;
+    if (typeof module.remoteName !== 'string') return false;
+    if (typeof module.basePath !== 'string') return false;
+    if (!Array.isArray(module.screens)) return false;
+
+    for (const screen of module.screens) {
+      if (!isPlainObject(screen)) return false;
+      if (typeof screen.path !== 'string') return false;
+      if (screen.mfePath !== undefined && typeof screen.mfePath !== 'string') return false;
+    }
+  }
+
+  return true;
+}
+
 export default function Home() {
   const [mapping, setMapping] = useState<MfeMapping>({});
   const [loading, setLoading] = useState(true);
@@ -28,7 +51,22 @@ export default function Home() {
   async function fetchMapping() {
     try {
       const res = await fetch('/api/mfe-mapping');
-      const data = await res.json();
+      const data: unknown = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        const serverMsg =
+          isPlainObject(data) && typeof data.error === 'string'
+            ? data.error
+            : `Error cargando mapping (${res.status})`;
+        setMessage(serverMsg);
+        return;
+      }
+
+      if (!isMfeMapping(data)) {
+        setMessage('Mapping inválido recibido del servidor');
+        return;
+      }
+
       setMapping(data);
     } catch {
       setMessage('Error cargando mapping');
@@ -46,11 +84,18 @@ export default function Home() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(mapping),
       });
+
       if (res.ok) {
         setMessage('Guardado exitosamente');
-      } else {
-        setMessage('Error guardando');
+        return;
       }
+
+      const data: unknown = await res.json().catch(() => null);
+      const serverMsg =
+        isPlainObject(data) && typeof data.error === 'string'
+          ? data.error
+          : `Error guardando (${res.status})`;
+      setMessage(serverMsg);
     } catch {
       setMessage('Error guardando');
     } finally {
