@@ -53,6 +53,9 @@
       },
       {
         "path": "/facturas/parametrizar-tipos-dce"
+      },
+      {
+        "path": "/facturas/compras"
       }
     ]
   }

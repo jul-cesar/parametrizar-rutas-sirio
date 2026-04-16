@@ -19,23 +19,26 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+function isScreenMapping(value: unknown): value is ScreenMapping {
+  return (
+    isPlainObject(value) &&
+    typeof value.path === 'string' &&
+    (value.mfePath === undefined || typeof value.mfePath === 'string')
+  );
+}
+
+function isModuleMapping(value: unknown): value is ModuleMapping {
+  return (
+    isPlainObject(value) &&
+    typeof value.remoteName === 'string' &&
+    typeof value.basePath === 'string' &&
+    Array.isArray(value.screens) &&
+    value.screens.every(isScreenMapping)
+  );
+}
+
 function isMfeMapping(value: unknown): value is MfeMapping {
-  if (!isPlainObject(value)) return false;
-
-  for (const module of Object.values(value)) {
-    if (!isPlainObject(module)) return false;
-    if (typeof module.remoteName !== 'string') return false;
-    if (typeof module.basePath !== 'string') return false;
-    if (!Array.isArray(module.screens)) return false;
-
-    for (const screen of module.screens) {
-      if (!isPlainObject(screen)) return false;
-      if (typeof screen.path !== 'string') return false;
-      if (screen.mfePath !== undefined && typeof screen.mfePath !== 'string') return false;
-    }
-  }
-
-  return true;
+  return isPlainObject(value) && Object.values(value).every(isModuleMapping);
 }
 
 export default function Home() {
