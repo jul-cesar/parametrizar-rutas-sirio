@@ -107,15 +107,30 @@ export default function Home() {
   }
 
   function addModule() {
-    const newKey = String(Math.max(...Object.keys(mapping).map(Number), 0) + 1);
+    const suggested = String(Math.max(...Object.keys(mapping).map(Number), 0) + 1);
+    const input = window.prompt('ID del módulo (ej: 3 para facturas)', suggested);
+    if (input === null) return;
+
+    const key = input.trim();
+    if (!key) {
+      setMessage('El ID del módulo no puede estar vacío');
+      return;
+    }
+
+    if (mapping[key]) {
+      setMessage(`Ya existe un módulo con ID ${key}`);
+      return;
+    }
+
     setMapping({
       ...mapping,
-      [newKey]: { remoteName: '', basePath: '', screens: [] },
+      [key]: { remoteName: '', basePath: '', screens: [] },
     });
   }
 
   function removeModule(key: string) {
-    const { [key]: _, ...rest } = mapping;
+    const rest = { ...mapping };
+    delete rest[key];
     setMapping(rest);
   }
 

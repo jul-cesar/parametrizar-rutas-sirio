@@ -6,9 +6,11 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 The `GET/PUT /api/mfe-mapping` endpoints persist the mapping.
 
-### Recommended (Vercel / PROD): PostgreSQL
+### PostgreSQL (source of truth)
 
 Set `DATABASE_URL` to your PostgreSQL connection string. When `DATABASE_URL` is set, the API stores the full mapping as a single `jsonb` document in a table called `mfe_mapping_store` (auto-created on first request).
+
+Note: JSON file persistence has been removed; `DATABASE_URL` is required for reads/writes.
 
 Neon notes:
 
@@ -21,27 +23,9 @@ Vercel setup:
 - Add `DATABASE_URL` (for Production / Preview as needed)
 - Redeploy
 
-### Alternative: File path (non-Vercel)
+### Incremental updates
 
-If you are running on a server with a persistent writable disk (VM, container with a mounted volume), you can set `MFE_MAPPING_PATH` to a JSON file path.
-
-If neither `DATABASE_URL` nor `MFE_MAPPING_PATH` is set in `NODE_ENV=production`, `PUT` returns an error (because the deploy filesystem is often read-only).
-
-Examples:
-
-- Linux/macOS (mounted folder / persistent volume):
-
-```bash
-MFE_MAPPING_PATH=/var/lib/app/mfe-mapping.json
-```
-
-- Windows (absolute path):
-
-```powershell
-$env:MFE_MAPPING_PATH = 'C:\\data\\mfe-mapping.json'
-```
-
-In development, if `MFE_MAPPING_PATH` is not set, it falls back to `data/mfe-mapping.json`.
+Besides `PUT` (replace full mapping), you can use `PATCH /api/mfe-mapping` to upsert a module by ID and/or append screens without sending the whole document.
 
 ## Getting Started
 

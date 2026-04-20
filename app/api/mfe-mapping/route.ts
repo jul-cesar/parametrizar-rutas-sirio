@@ -1,6 +1,4 @@
 import { NextResponse } from 'next/server';
-import fs from 'node:fs';
-import path from 'node:path';
 import { Pool } from 'pg';
 
 export const runtime = 'nodejs';
@@ -23,11 +21,6 @@ const IS_PROD = process.env.NODE_ENV === 'production';
 
 const DATABASE_URL = process.env.DATABASE_URL?.trim();
 const USE_POSTGRES = Boolean(DATABASE_URL);
-
-const MFE_MAPPING_PATH = process.env.MFE_MAPPING_PATH?.trim();
-const DATA_PATH = MFE_MAPPING_PATH
-  ? path.resolve(MFE_MAPPING_PATH)
-  : path.join(process.cwd(), 'data', 'mfe-mapping.json');
 
 declare global {
   var __mfeMappingPool: Pool | undefined;
@@ -178,15 +171,6 @@ function isPatchBody(value: unknown): value is PatchBody {
   return false;
 }
 
-function readMappingFromFile(): MfeMapping {
-  const raw = fs.readFileSync(DATA_PATH, 'utf-8');
-  const parsed: unknown = JSON.parse(raw);
-  if (!isMfeMapping(parsed)) {
-    throw new Error('Invalid mapping schema in data file');
-  }
-  return parsed;
-}
-
 async function readMappingFromPostgres(): Promise<MfeMapping> {
   await ensureTable();
   const pool = getPool();
@@ -204,15 +188,10 @@ async function readMappingFromPostgres(): Promise<MfeMapping> {
 }
 
 async function readMapping(): Promise<MfeMapping> {
-  if (USE_POSTGRES) {
-    return readMappingFromPostgres();
+  if (!USE_POSTGRES) {
+    throw new Error('DATABASE_URL is required (JSON file persistence has been removed)');
   }
-  return readMappingFromFile();
-}
-
-function writeMappingToFile(data: MfeMapping) {
-  fs.mkdirSync(path.dirname(DATA_PATH), { recursive: true });
-  fs.writeFileSync(DATA_PATH, JSON.stringify(data, null, 2), 'utf-8');
+  return readMappingFromPostgres();
 }
 
 async function writeMappingToPostgres(data: MfeMapping): Promise<void> {
@@ -231,10 +210,10 @@ async function writeMappingToPostgres(data: MfeMapping): Promise<void> {
 }
 
 async function writeMapping(data: MfeMapping): Promise<void> {
-  if (USE_POSTGRES) {
-    return writeMappingToPostgres(data);
+  if (!USE_POSTGRES) {
+    throw new Error('DATABASE_URL is required (JSON file persistence has been removed)');
   }
-  return writeMappingToFile(data);
+  return writeMappingToPostgres(data);
 }
 
 export async function GET() {
@@ -260,15 +239,7 @@ export async function GET() {
 
 export async function PUT(request: Request) {
   try {
-    if (IS_PROD && !USE_POSTGRES && !MFE_MAPPING_PATH) {
-      return NextResponse.json(
-        {
-          error:
-            'No se puede guardar en PROD en el filesystem del deploy. Configura la variable MFE_MAPPING_PATH apuntando a una ruta persistente/escribible.',
-        },
-        { status: 500, headers: CORS_HEADERS }
-      );
-    }
+    if (!USE_POSTGRES) throw new Error('DATABASE_URL is required');
 
     const body: unknown = await request.json();
 
@@ -290,14 +261,7 @@ export async function PUT(request: Request) {
     }
 
     let error = code ? `Error saving mapping (${code})` : 'Error saving mapping';
-    if ((code === 'EROFS' || code === 'EACCES' || code === 'EPERM') && !MFE_MAPPING_PATH) {
-      error =
-        'No se puede guardar en PROD en el filesystem del deploy. Configura la variable MFE_MAPPING_PATH apuntando a una ruta persistente/escribible.';
-    }
-
-    if (!code && USE_POSTGRES) {
-      error = 'Error saving mapping to PostgreSQL';
-    }
+    if (!code && USE_POSTGRES) error = 'Error saving mapping to PostgreSQL';
 
     return NextResponse.json(
       { error, ...(details ? { details } : {}) },
@@ -308,15 +272,7 @@ export async function PUT(request: Request) {
 
 export async function PATCH(request: Request) {
   try {
-    if (IS_PROD && !USE_POSTGRES && !MFE_MAPPING_PATH) {
-      return NextResponse.json(
-        {
-          error:
-            'No se puede guardar en PROD en el filesystem del deploy. Configura la variable MFE_MAPPING_PATH apuntando a una ruta persistente/escribible.',
-        },
-        { status: 500, headers: CORS_HEADERS }
-      );
-    }
+    if (!USE_POSTGRES) throw new Error('DATABASE_URL is required');
 
     const body: unknown = await request.json();
     if (!isPatchBody(body)) {
@@ -334,12 +290,12 @@ export async function PATCH(request: Request) {
     const updated: MfeMapping = { ...current };
 
     if (body.op === 'upsertModule') {
-      const module: ModuleMapping = {
+      const moduleMapping: ModuleMapping = {
         remoteName: body.module.remoteName,
         basePath: body.module.basePath,
         screens: body.module.screens ?? updated[key]?.screens ?? [],
       };
-      updated[key] = module;
+      updated[key] = moduleMapping;
     } else if (body.op === 'addScreen') {
       const existing = updated[key];
       if (!existing) {
@@ -378,14 +334,7 @@ export async function PATCH(request: Request) {
     }
 
     let error = code ? `Error patching mapping (${code})` : 'Error patching mapping';
-    if ((code === 'EROFS' || code === 'EACCES' || code === 'EPERM') && !MFE_MAPPING_PATH) {
-      error =
-        'No se puede guardar en PROD en el filesystem del deploy. Configura la variable MFE_MAPPING_PATH apuntando a una ruta persistente/escribible.';
-    }
-
-    if (!code && USE_POSTGRES) {
-      error = 'Error patching mapping in PostgreSQL';
-    }
+    if (!code && USE_POSTGRES) error = 'Error patching mapping in PostgreSQL';
 
     return NextResponse.json(
       { error, ...(details ? { details } : {}) },
