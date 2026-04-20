@@ -92,7 +92,7 @@ function ensureTable(): Promise<void> {
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, PUT, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, PUT, PATCH, OPTIONS',
   'Access-Control-Allow-Headers': 'Authorization, Content-Type, Accept, Origin, X-Requested-With',
 };
 
@@ -128,6 +128,54 @@ function isModuleMapping(value: unknown): value is ModuleMapping {
 
 function isMfeMapping(value: unknown): value is MfeMapping {
   return isPlainObject(value) && Object.values(value).every(isModuleMapping);
+}
+
+type PatchUpsertModuleBody = {
+  op: 'upsertModule';
+  key: string;
+  module: {
+    remoteName: string;
+    basePath: string;
+    screens?: ScreenMapping[];
+  };
+};
+
+type PatchAddScreenBody = {
+  op: 'addScreen';
+  key: string;
+  screen: ScreenMapping;
+};
+
+type PatchAddScreensBody = {
+  op: 'addScreens';
+  key: string;
+  screens: ScreenMapping[];
+};
+
+type PatchBody = PatchUpsertModuleBody | PatchAddScreenBody | PatchAddScreensBody;
+
+function isPatchBody(value: unknown): value is PatchBody {
+  if (!isPlainObject(value)) return false;
+  if (typeof value.op !== 'string') return false;
+  if (typeof value.key !== 'string' || value.key.trim() === '') return false;
+
+  if (value.op === 'upsertModule') {
+    if (!isPlainObject(value.module)) return false;
+    if (typeof value.module.remoteName !== 'string') return false;
+    if (typeof value.module.basePath !== 'string') return false;
+    if (value.module.screens === undefined) return true;
+    return Array.isArray(value.module.screens) && value.module.screens.every(isScreenMapping);
+  }
+
+  if (value.op === 'addScreen') {
+    return isScreenMapping(value.screen);
+  }
+
+  if (value.op === 'addScreens') {
+    return Array.isArray(value.screens) && value.screens.every(isScreenMapping);
+  }
+
+  return false;
 }
 
 function readMappingFromFile(): MfeMapping {
@@ -249,6 +297,94 @@ export async function PUT(request: Request) {
 
     if (!code && USE_POSTGRES) {
       error = 'Error saving mapping to PostgreSQL';
+    }
+
+    return NextResponse.json(
+      { error, ...(details ? { details } : {}) },
+      { status: 500, headers: CORS_HEADERS }
+    );
+  }
+}
+
+export async function PATCH(request: Request) {
+  try {
+    if (IS_PROD && !USE_POSTGRES && !MFE_MAPPING_PATH) {
+      return NextResponse.json(
+        {
+          error:
+            'No se puede guardar en PROD en el filesystem del deploy. Configura la variable MFE_MAPPING_PATH apuntando a una ruta persistente/escribible.',
+        },
+        { status: 500, headers: CORS_HEADERS }
+      );
+    }
+
+    const body: unknown = await request.json();
+    if (!isPatchBody(body)) {
+      return NextResponse.json(
+        {
+          error:
+            'Body inválido. Usa { op: "upsertModule", key, module } o { op: "addScreen", key, screen } o { op: "addScreens", key, screens }',
+        },
+        { status: 400, headers: CORS_HEADERS }
+      );
+    }
+
+    const key = body.key.trim();
+    const current = await readMapping();
+    const updated: MfeMapping = { ...current };
+
+    if (body.op === 'upsertModule') {
+      const module: ModuleMapping = {
+        remoteName: body.module.remoteName,
+        basePath: body.module.basePath,
+        screens: body.module.screens ?? updated[key]?.screens ?? [],
+      };
+      updated[key] = module;
+    } else if (body.op === 'addScreen') {
+      const existing = updated[key];
+      if (!existing) {
+        return NextResponse.json(
+          { error: `No existe el módulo "${key}". Usa op=upsertModule primero.` },
+          { status: 404, headers: CORS_HEADERS }
+        );
+      }
+      updated[key] = { ...existing, screens: [...existing.screens, body.screen] };
+    } else if (body.op === 'addScreens') {
+      const existing = updated[key];
+      if (!existing) {
+        return NextResponse.json(
+          { error: `No existe el módulo "${key}". Usa op=upsertModule primero.` },
+          { status: 404, headers: CORS_HEADERS }
+        );
+      }
+      updated[key] = { ...existing, screens: [...existing.screens, ...body.screens] };
+    }
+
+    if (!isMfeMapping(updated)) {
+      return NextResponse.json(
+        { error: 'El patch dejó el mapping en un estado inválido' },
+        { status: 500, headers: CORS_HEADERS }
+      );
+    }
+
+    await writeMapping(updated);
+    return NextResponse.json(updated, { headers: CORS_HEADERS });
+  } catch (err) {
+    const code = getErrnoCode(err);
+
+    let details: string | undefined;
+    if (process.env.NODE_ENV === 'development') {
+      details = err instanceof Error ? err.message : String(err);
+    }
+
+    let error = code ? `Error patching mapping (${code})` : 'Error patching mapping';
+    if ((code === 'EROFS' || code === 'EACCES' || code === 'EPERM') && !MFE_MAPPING_PATH) {
+      error =
+        'No se puede guardar en PROD en el filesystem del deploy. Configura la variable MFE_MAPPING_PATH apuntando a una ruta persistente/escribible.';
+    }
+
+    if (!code && USE_POSTGRES) {
+      error = 'Error patching mapping in PostgreSQL';
     }
 
     return NextResponse.json(
